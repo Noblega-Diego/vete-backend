@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  products  Product[]
+  deleted   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id          Int            @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  stock       Int
+  categoryId  Int
+  category    Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  images      ProductImage[]
+  deleted     Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model ProductImage {
+  id          Int       @id @default(autoincrement())
+  productId   Int
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url         String
+  description String?
+  order       Int?
+  deleted     Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Client {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  phone        String?
+  address      String?
+  pets         Pet[]
+  appointments Appointment[]
+  deleted      Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  userClients  UserClient[]
+}
+
+model Pet {
+  id             Int             @id @default(autoincrement())
+  name           String
+  species        String
+  breed          String?
+  age            Int?
+  weight         Float?
+  clientId       Int
+  client         Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  medicalRecords MedicalRecord[]
+  appointments   Appointment[]
+  images         PetImage[]
+  deleted        Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model PetImage {
+  id          Int      @id @default(autoincrement())
+  petId       Int
+  pet         Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  url         String
+  description String?
+  order       Int?
+  deleted     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MedicalRecord {
+  id            Int                  @id @default(autoincrement())
+  petId         Int
+  pet           Pet                  @relation(fields: [petId], references: [id], onDelete: Cascade)
+  appointmentId Int?                 // Referencia a la atención (opcional)
+  appointment   Appointment?         @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  visitDate     DateTime
+  notes         String
+  files         MedicalRecordFile[]
+  deleted       Boolean              @default(false)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+}
+
+model MedicalRecordFile {
+  id              Int           @id @default(autoincrement())
+  medicalRecordId Int
+  medicalRecord   MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+  url             String        // URL al archivo (imagen, PDF, etc.)
+  name            String?       // Nombre del archivo
+  fileType        String?       // Tipo MIME (opcional)
+  deleted         Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Coupon {
+  id             Int       @id @default(autoincrement())
+  code           String    @unique
+  description    String?
+  discountType   DiscountType
+  discountValue  Float
+  maxUses        Int?
+  expiresAt      DateTime?
+  isActive       Boolean   @default(true)
+  deleted        Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+enum DiscountType {
+  PERCENTAGE
+  AMOUNT
+}
+
+model ServiceType {
+  id          Int            @id @default(autoincrement())
+  name        String         @unique
+  description String?
+  durationMin Int
+  appointments Appointment[]
+  deleted     Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Appointment {
+  id             Int                @id @default(autoincrement())
+  date           DateTime
+  reason         String?
+  status         AppointmentStatus  @default(PENDING)
+  notes          String?
+  durationMin    Int
+  clientId       Int
+  client         Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  petId          Int
+  pet            Pet                @relation(fields: [petId], references: [id], onDelete: Cascade)
+  serviceTypeId  Int
+  serviceType    ServiceType        @relation(fields: [serviceTypeId], references: [id], onDelete: Restrict)
+  medicalRecords MedicalRecord[]    // Relación inversa: todas las fichas asociadas a esta atención
+  deleted        Boolean            @default(false)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String   // Hash de la contraseña
+  name      String
+  role      UserRole @default(CLIENT)
+  deleted   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userClients UserClient[]
+}
+
+enum UserRole {
+  ADMIN
+  VET
+  CLIENT
+}
+
+model UserClient {
+  id        Int    @id @default(autoincrement())
+  userId    Int
+  clientId  Int
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client    Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([userId, clientId])
+}
