@@ -11,5 +11,29 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
-volumes:
-  db_data:
+    networks:
+      - veterinaria-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/vetdb
+      - JWT_SECRET=your-jwt-secret-key
+      - PORT=3000
+    depends_on:
+      - db
+    networks:
+      - veterinaria-network
+    volumes:
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+
+networks:
+  veterinaria-network:
+    driver: bridge

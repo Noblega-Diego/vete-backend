@@ -1,0 +1,20 @@
+# Dockerfile para desarrollo del backend NestJS
+FROM node:18-alpine
+
+# Instalar netcat para verificar la conexión a la base de datos
+RUN apk add --no-cache netcat-openbsd
+
+# Establecer el directorio de trabajo
+WORKDIR /app
+
+# Copiar package.json y package-lock.json
+COPY package*.json ./
+
+# Instalar dependencias
+RUN npm install
+
+# Exponer el puerto de desarrollo
+EXPOSE 3000
+
+# Comando para ejecutar en modo desarrollo
+CMD ["npm", "run", "start:dev"]
